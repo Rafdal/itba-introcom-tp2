@@ -1,0 +1,58 @@
+################################################################################
+#                                                                              #
+#    Micro Series 6801 Assembler V2.00/DOS              12/Apr/21  18:25:07    #
+#                                                                              #
+#       Source   =   tp2_p06.msa                                               #
+#       List     =   tp2_p06.lst                                               #
+#       Object   =   tp2_p06.r07                                               #
+#       Options  =                                                             #
+#                                                                              #
+#                                               (c) Copyright IAR Systems 1990 #
+################################################################################
+
+
+    1                 *****************************************************************************************************************
+    2                 *               TP2     EJERCICIO 6                     GRUPO 1                                                 *
+    3                 *                                                                                                               *
+    4                 * Consigna:                                                                                                     *
+    5                 *       Determinar la longitud de una cadena de caracteres.                                                     *
+    6                 *       La misma comienza en la dirección $2070 y el final de la misma está determinada por                     *
+    7                 *       el carácter ASCII "CR" (equivalente a $0D).                                                             *
+    8                 *       Guardar la longitud en la dirección $2000 (asumir que longitud máxima puede ser 255)                    *
+    9                 *                                                                                                               *
+   10                 *       ATENCION: Debe cargar el .s19 en el Wookie indicando Start Adress = 2005                                *
+   11                 *****************************************************************************************************************
+   12  0000                   p68H11
+   13                 
+   14  000D           CR      equ     $0D             Caracter "Carriage Return" que marca el final del string
+   15  2070           STRPOS  equ     $2070           Posición inicial de la cadena
+   16                 
+   17  00FF           max     equ     255             Máxima cantidad veces que se ejecuta el contador (1 byte)
+   18                 
+   19                 
+   20  2005                   org     $2005           Escribo el programa a partir de la dirección $2005 (leer Atención)
+   21  2005           main    equ     *
+   22  2005 CE2070            ldx     #STRPOS         Cargo la posición inicial de la cadena en X
+   23  2008 C6FF              ldab    #max            Cargo las repeticiones del contador en B
+   24                 
+   25  200A 860D      repite  ldaa    #CR             Cargo el caracter CR ($0D) en A, para luego hacer A(xor)caracter
+   26  200C A800              eora    0,X             Hago Xor entre A ($0D) y el caracter en la posición de memoria X
+   27  200E 2704              beq     found           Si el XOR devuelve cero, significa que el caracter en cuestión era CR
+   28  2010 08                inx                     Voy a la siguiente posición de la cadena
+   29  2011 5A                decb                    Decremento el contador de cantidad de repeticiones
+   30  2012 26F6              bne     repite          Si no es cero, repite la búsqueda del caracter CR
+   31                 
+   32  2014 53        found   comb                    Invierto el valor de B para obtener la cantidad de caracteres contados
+   33  2015 F72000            stab    lenPos          Guardo el largo de la cadena en lenPos
+   34                 
+   35  2000                   org     $2000
+   36  2000           lenPos  rmb     1               Variable que cuenta el largo del string
+   37                 
+   38                 
+   39  2001 7E2001    fin     jmp     fin
+   40  2004                   end
+
+    Errors:  None         ###########
+    Bytes:   22           # tp2_p06 #
+    CRC:     DD44         ###########
+

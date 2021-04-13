@@ -1,0 +1,31 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 5			GRUPO 1							*
+*														*
+* Consigna:													*
+* 	Divida el contenido de la posición de memoria $2200 en dos secciones de 4 bits (nibble). 		*
+*	Colocar el nibble más significativo en la posición $2202 y el nibble menos significativo 		*
+*	en la posición $2203. Completar con ceros las palabras para formar el byte.				*
+*****************************************************************************************************************
+	p68H11
+
+INPUT	equ	$2200		Indico la posición de memoria del valor de entrada
+
+
+	org	$2000
+main	equ	*
+	clr	ms_nib		Borro todo lo que haya en la posición del nibble más significativo
+	clr	ls_nib		Hago lo mismo pero con el menos significativo
+	ldaa	#$0F		Cargo la máscara $0F en el registro A (para extraer el nibble menos sign.)
+	anda	INPUT		Aplico la máscara sobre el byte del input para extraer el LS Nibble (A = A & input)
+	staa	ls_nib		Guardo el resultado en la posición de ls_nib ($2203)
+	ldaa	#$F0		Cargo una máscara $F0 en A, esta vez para extraer el nibble más significativo
+	anda	INPUT		Aplico la máscara al input y guardo el resultado en A
+	staa	ms_nib		Guardo el resultado de la operación anterior en la posición de ms_nib ($2202)
+
+	org	$2202
+ms_nib	rmb	1		Nibble más significativo
+ls_nib	rmb	1		Nibble menos significativo
+
+
+fin	jmp	fin		Fin del programa
+	end

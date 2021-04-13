@@ -1,0 +1,86 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 8			GRUPO 1							*
+*														*
+* Consigna:													*
+*	La subrutina recibe como parámetro un puntero (dirección de memoria) a la dirección de inicio del 	*
+*	string en el registro IX y la dirección destino en el registro IY. 					*
+*	Usar la directiva FCC y FCB para definir la cadena origen de prueba y RMB para reservar la zona de	*
+*	memoria destino (reservar por defecto 20 bytes). 							*
+*	El string origen tiene como terminador el cero. La copia termina una vez copiado el terminador $00.	*
+*	Si la función puede realizar la copia exitosamente deberá colocar un cero en el registro A, 		*
+*	de no hacerlo deberá colocar el mismo con un uno. Se deberán emplear menos de 20 instrucciones.		*
+*****************************************************************************************************************
+	p68h11
+
+STR_LEN	equ	20		Largo máximo de la cadena de caracteres a copiar.
+STR_IN	equ	$2040		Posición de la cadena a copiar
+STROUT	equ	$2060		Posición en la que se pegará la cadena copiada
+
+*********************************************************
+*		PROGRAMA PRINCIPAL (MAIN)		*
+*							*
+*	Copia una cadena de texto de 20 caracteres	*
+*	como máximo (incluyendo el terminador)		*
+*********************************************************
+
+	org	$2000
+main	equ	*
+	lds	#stk_ini 	cargo la posición del stack
+	ldx	#STR_IN		IX = dirección del string de entrada (input)
+	ldy	#STROUT		IY = dirección de salida (donde se pega el string copiado)
+
+	jsr	strcpy		Llamo a la subrutina strcpy
+
+fin	jmp	fin
+
+
+*****************************************************************************************
+*		SUBRUTINA STRCPY							*
+* Descripción: Esta subrutina copia una cadena de texto	de una posición a otra. 	*
+* 											*
+* Inputs: Recibe por el registro IX la posición	inicial de la cadena a copiar y 	*
+*	por el registro IY la posición inicial en donde se pegará dicha cadena		*
+*											*
+* Si la copia fue exitosa, el registro A queda en cero, en caso contrario queda en 1	*
+*****************************************************************************************
+
+	ORG	$20A0
+strcpy	equ	*
+	pshb			Solo hago backup de B porque IX,IY y A son variables de input/output
+ 	ldab	#STR_LEN	cargo en B la cantidad de ciclos del loop (caracteres a copiar)
+
+loop	ldaa	0,X		Cargo un caracter en A
+	beq	endstr		Si detecto el terminador del string ($00), salto a endstr
+	staa	0,Y		En caso contrario, pego el caracter en las posiciones de destino
+	inx			Aumento los punteros IX e IY para ir al siguiente caracter
+	iny
+	decb			Decremento el contador B que marca la cantidad de caracteres a copiar
+	bne	loop		Si el contador no llegó a cero, repite
+	ldaa	#1		Error: no se encontró el el fin de la cadena (A=1) y se superó el máximo de carcteres a copiar
+	bra	return		
+endstr	ldaa 	#0		OK: La cadena se copio exitosamente (A=0)
+			
+return	pulb			Recupero B
+	rts
+
+*********************************************************
+*		AREA DE MEMORIA				*
+*********************************************************
+	org	STR_IN		posición de la cadena a copiar
+STRING 	fcc 	'CHARACTER STRING'
+
+	org	STROUT		Posición en la que pegaré la cadena
+	rmb	STR_LEN		Reservo memoria para la cadena de caraceres (destino)
+
+
+*********************************************************
+*		AREA DEL STACK				*
+* Se necesitan 3 posiciones, se deja un margen extra	*
+*********************************************************
+
+	ORG	$2100
+stack	RMB	16
+stk_ini	EQU	*-1
+
+
+	end

@@ -1,0 +1,189 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 11			GRUPO 1							*
+*														*
+* Consigna:													*
+*	Utilizando los leds que el wookie tiene conectados al puerto A (la dirección del 			*
+*	puerto A figura en la hoja de datos del procesador) del HC11 y teniendo en cuenta 			*
+*	que solo los bits (3 al 6) del mismo son salidas. Se pide:						*
+*    a) Generar un contador binario cuyo valor se refleje en los bits mencionados. 				*
+*	El contador deberá contar de 0 a 15 e iniciar la cuenta nuevamente.					*
+*    b) Encender un solo led moviendo el mismo de derecha a izquierda 						*
+*	(símil ?auto fantástico? - https://es.wikipedia.org/wiki/Knight_Rider).  				*
+*    c) Se deben encender los leds de derecha a izquierda conservando encendido los leds previos.		*
+*	En todos los casos el intervalo entre secuencias debe ser de 0.5 segundos, se recomienda utilizar la	*
+*	función anterior.											*
+*****************************************************************************************************************
+	p68h11
+
+PUNTO_A	equ	0		a) Contador binario de 4 bits
+PUNTO_B	equ	1		b) Auto fantástico
+PUNTO_C	equ	2		c) Encender leds de derecha a izquierda
+
+PUNTO	equ	PUNTO_C		Seleccione cual punto del ejercicio quiere probar (PUNTO_A, PUNTO_B, PUNTO_C)
+
+	org	$2000
+main	equ	*
+	lds	#stk_ini	Cargo la posición inicial del stack
+
+	if	PUNTO=PUNTO_A	Ejecuto el punto A "Contador binario de 4 bits"
+punto_a	ldab	#0		Inicio el contador B en cero
+	ldaa	#16		repeticiones del contador
+L00	equ	*
+	pshb			Coloco el input (registro B) de setLeds en stack
+	jsr	setLeds		Llamo la subrutina setLeds
+	ins			Libero 1 byte del stack
+	jsr 	delay_5		Delay de aprox 0,5 segundos	
+	incb			Incremento el contador B, a modo de simular el contador de bits
+	deca			
+	bne	L00
+	bra	punto_a
+	endif
+
+	if	PUNTO=PUNTO_B	Ejecuto el punto B "Auto fantástico"
+punto_b	equ	*
+	ldab	#1		Cargo un bit en B, que irá encendiendo los leds de lado a lado
+	ldaa	#3		repeticiones del contador
+L01	pshb
+	jsr	setLeds
+	ins
+	jsr 	delay_5		Delay de aprox 0,5 segundos
+	rolb			Roto el bit de B a la izquierda
+	deca
+	bne	L01
+
+	ldaa	#3		repeticiones del contador
+L02	pshb
+	jsr	setLeds
+	ins
+	jsr 	delay_5		Delay de aprox 0,5 segundos
+	rorb			Roto el bit de B a la izquierda
+	deca
+	bne	L02
+
+	bra	punto_b
+	endif
+
+
+	if	PUNTO=PUNTO_C	Ejecuto el punto C "Encender leds de Der a Izq"
+punto_c	equ	*
+	ldaa	#5		repeticiones del contador
+	ldab	#0		Inicio B en 0
+
+L03	pshb			paso el parámetro (registro B) de la subrutina setLeds por stack
+	jsr	setLeds		ejecuto la subrutina
+	ins			libero 1 byte del stack
+	jsr 	delay_5		Delay de aprox 0,5 segundos
+	sec			pongo el carry en 1 para poder "insertar" 1's en B
+	rolb			Roto B a la izquierda para que los 1 aparezcan
+	deca			decremento la cantidad de cilos restantes
+	bne	L03		si no es cero, repito
+
+	bra	punto_c
+	endif
+
+fin	jmp	fin
+
+
+
+*********************************************************
+*		SUBRUTINA setLeds			*
+*							*
+* Sirve para setear los 4 leds de salida de Port A	*
+* Recibe un input de un byte por el stack		*
+* solo se utiliza el nibble menos significativo		*
+* cada bit corresponde a un led del puerto A		*
+*							*
+* No retorna valores. Es necesario liberar 1 byte del	*
+* stack después de invocarla				*
+*********************************************************
+	org	$2100
+setLeds	equ	*
+	pshx			backup de X
+	tsx			X=SP+1
+	psha			Hago backup de los registros principales
+	pshb
+	pshy
+
+	ldaa 	4,X		Leo el parámetro de entrada
+	rola
+	rola			Con 'rola', corro los bits de A 3 veces a la izquierda
+	rola			para que coincidan con los bits de salida del Puerto A.
+	staa	$1000		Guardo el valor ya formateado en la direccion de memoria del puerto A
+
+	puly			Reupero los backups de los registros principales
+	pulb
+	pula
+	pulx
+	rts
+
+
+*********************************************************
+*		SUBRUTINA DELAY				*
+*							*
+* Esta subrutina provoca un delay de aprox 500 ms para	*
+* el procesador M68HC11E				*
+* No recibe ningún parámetro ni retorna valores, no 	*
+* hace falta liberar el stack depués de invocarla	*
+*********************************************************
+	org	$2150
+delay	equ	*
+	pshx			Hago backup de los registros	(4 ciclos)
+	pshy							(5 ciclos)
+	psha							(3 ciclos)
+	pshb							(3 ciclos)
+	ldaa	#2		Cargo la cantidad de repeticiones que haré con el loop1. (2 ciclos)
+*								[TOTAL:17]
+
+*	[LOOP1]: n recorridos del loop1 lleva n*(9+T) ciclos, siendo T los ciclos en total del loop2. 
+loop1	ldy	#$D900		Cargo la cantidad de repeticiones que haré con el loop2. (4 ciclos)
+
+* 	[LOOP2]: Un solo recorrido del loop2 lleva 9 ciclos, 55552 ($D900) recorridos del loop2 lleva 499968 ciclos
+loop2	nop			retardo 		(2 ciclos)
+	dey			decremento Y 		(4 ciclos)
+	bne	loop2		salto si no es cero 	(3 ciclos)
+*							[TOTAL:9]
+
+	deca			decremento A	(2 ciclos)
+	bne	loop1		si A!=0, repito (3 ciclos)
+
+
+	ldy	#$12		Retardo 			(5 ciclos)
+	pulb			Recupero el valor 		(4 ciclos)
+	pula			de los	registros		(4 ciclos)
+	puly							(6 ciclos)
+	pulx							(5 ciclos)
+	rts			Retorno de la rubrutina		(5 ciclos)
+*								[TOTAL:29]
+
+
+*********************************************************
+*		SUBRUTINA DELAY_5			*
+*							*
+* Esta subrutina ejecuta 10 veces la subrutina delay	*
+* ya que la anterior no tiene un delay exacto de 500ms	*
+* Con esta subrutina se logra un delay de aproximado de	*
+* 0,5 segundos para el Wookie				*
+* No tiene ningún parámetro de entrada ni retorna valores
+*********************************************************
+	org	$2180
+delay_5	equ	*
+	psha			solo hago backup de A porque es el único registro que modifico
+	ldaa	#10		cargo la cantidad de repeticiones
+
+repite2	jsr	delay		Llamo a la subrutina delay
+	deca			decremento las repeticiones restantes
+	bne	repite2		si la cantidad de repeticiones restantes no es cero, repite
+
+	pula			recupero el backup de A
+	rts
+
+*********************************************************
+*		ZONA DEL STACK				*
+*********************************************************
+
+	org	$2500
+stack	rmb	32
+stk_ini	equ	*-1
+
+
+	end

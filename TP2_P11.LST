@@ -1,0 +1,207 @@
+################################################################################
+#                                                                              #
+#    Micro Series 6801 Assembler V2.00/DOS              12/Apr/21  18:25:20    #
+#                                                                              #
+#       Source   =   tp2_p11.msa                                               #
+#       List     =   tp2_p11.lst                                               #
+#       Object   =   tp2_p11.r07                                               #
+#       Options  =                                                             #
+#                                                                              #
+#                                               (c) Copyright IAR Systems 1990 #
+################################################################################
+
+
+    1                 *****************************************************************************************************************
+    2                 *               TP2     EJERCICIO 11                    GRUPO 1                                                 *
+    3                 *                                                                                                               *
+    4                 * Consigna:                                                                                                     *
+    5                 *       Utilizando los leds que el wookie tiene conectados al puerto A (la dirección del                        *
+    6                 *       puerto A figura en la hoja de datos del procesador) del HC11 y teniendo en cuenta                       *
+    7                 *       que solo los bits (3 al 6) del mismo son salidas. Se pide:                                              *
+    8                 *    a) Generar un contador binario cuyo valor se refleje en los bits mencionados.                              *
+    9                 *       El contador deberá contar de 0 a 15 e iniciar la cuenta nuevamente.                                     *
+   10                 *    b) Encender un solo led moviendo el mismo de derecha a izquierda                                           *
+   11                 *       (símil ?auto fantástico? - https://es.wikipedia.org/wiki/Knight_Rider).                                 *
+   12                 *    c) Se deben encender los leds de derecha a izquierda conservando encendido los leds previos.               *
+   13                 *       En todos los casos el intervalo entre secuencias debe ser de 0.5 segundos, se recomienda utilizar la    *
+   14                 *       función anterior.                                                                                       *
+   15                 *****************************************************************************************************************
+   16  0000                   p68h11
+   17                 
+   18  0000           PUNTO_A equ     0               a) Contador binario de 4 bits
+   19  0001           PUNTO_B equ     1               b) Auto fantástico
+   20  0002           PUNTO_C equ     2               c) Encender leds de derecha a izquierda
+   21                 
+   22  0002           PUNTO   equ     PUNTO_C         Seleccione cual punto del ejercicio quiere probar (PUNTO_A, PUNTO_B, PUNTO_C)
+   23                 
+   24  2000                   org     $2000
+   25  2000           main    equ     *
+   26  2000 8E251F            lds     #stk_ini        Cargo la posición inicial del stack
+   27                 
+   28                         if      PUNTO=PUNTO_A   Ejecuto el punto A "Contador binario de 4 bits"
+   29                 punto_a ldab    #0              Inicio el contador B en cero
+   30                         ldaa    #16             repeticiones del contador
+   31                 L00     equ     *
+   32                         pshb                    Coloco el input (registro B) de setLeds en stack
+   33                         jsr     setLeds         Llamo la subrutina setLeds
+   34                         ins                     Libero 1 byte del stack
+   35                         jsr     delay_5         Delay de aprox 0,5 segundos     
+   36                         incb                    Incremento el contador B, a modo de simular el contador de bits
+   37                         deca                    
+   38                         bne     L00
+   39                         bra     punto_a
+   40  2003                   endif
+   41                 
+   42                         if      PUNTO=PUNTO_B   Ejecuto el punto B "Auto fantástico"
+   43                 punto_b equ     *
+   44                         ldab    #1              Cargo un bit en B, que irá encendiendo los leds de lado a lado
+   45                         ldaa    #3              repeticiones del contador
+   46                 L01     pshb
+   47                         jsr     setLeds
+   48                         ins
+   49                         jsr     delay_5         Delay de aprox 0,5 segundos
+   50                         rolb                    Roto el bit de B a la izquierda
+   51                         deca
+   52                         bne     L01
+   53                 
+   54                         ldaa    #3              repeticiones del contador
+   55                 L02     pshb
+   56                         jsr     setLeds
+   57                         ins
+   58                         jsr     delay_5         Delay de aprox 0,5 segundos
+   59                         rorb                    Roto el bit de B a la izquierda
+   60                         deca
+   61                         bne     L02
+   62                 
+   63                         bra     punto_b
+   64  2003                   endif
+   65                 
+   66                 
+   67  2003                   if      PUNTO=PUNTO_C   Ejecuto el punto C "Encender leds de Der a Izq"
+   68  2003           punto_c equ     *
+   69  2003 8605              ldaa    #5              repeticiones del contador
+   70  2005 C600              ldab    #0              Inicio B en 0
+   71                 
+   72  2007 37        L03     pshb                    paso el parámetro (registro B) de la subrutina setLeds por stack
+   73  2008 BD2100            jsr     setLeds         ejecuto la subrutina
+   74  200B 31                ins                     libero 1 byte del stack
+   75  200C BD2180            jsr     delay_5         Delay de aprox 0,5 segundos
+   76  200F 0D                sec                     pongo el carry en 1 para poder "insertar" 1's en B
+   77  2010 59                rolb                    Roto B a la izquierda para que los 1 aparezcan
+   78  2011 4A                deca                    decremento la cantidad de cilos restantes
+   79  2012 26F3              bne     L03             si no es cero, repito
+   80                 
+   81  2014 20ED              bra     punto_c
+   82  2016                   endif
+   83                 
+   84  2016 7E2016    fin     jmp     fin
+   85                 
+   86                 
+   87                 
+   88                 *********************************************************
+   89                 *               SUBRUTINA setLeds                       *
+   90                 *                                                       *
+   91                 * Sirve para setear los 4 leds de salida de Port A      *
+   92                 * Recibe un input de un byte por el stack               *
+   93                 * solo se utiliza el nibble menos significativo         *
+   94                 * cada bit corresponde a un led del puerto A            *
+   95                 *                                                       *
+   96                 * No retorna valores. Es necesario liberar 1 byte del   *
+   97                 * stack después de invocarla                            *
+   98                 *********************************************************
+   99  2100                   org     $2100
+  100  2100           setLeds equ     *
+  101  2100 3C                pshx                    backup de X
+  102  2101 30                tsx                     X=SP+1
+  103  2102 36                psha                    Hago backup de los registros principales
+  104  2103 37                pshb
+  105  2104 183C              pshy
+  106                 
+  107  2106 A604              ldaa    4,X             Leo el parámetro de entrada
+  108  2108 49                rola
+  109  2109 49                rola                    Con 'rola', corro los bits de A 3 veces a la izquierda
+  110  210A 49                rola                    para que coincidan con los bits de salida del Puerto A.
+  111  210B B71000            staa    $1000           Guardo el valor ya formateado en la direccion de memoria del puerto A
+  112                 
+  113  210E 1838              puly                    Reupero los backups de los registros principales
+  114  2110 33                pulb
+  115  2111 32                pula
+  116  2112 38                pulx
+  117  2113 39                rts
+  118                 
+  119                 
+  120                 *********************************************************
+  121                 *               SUBRUTINA DELAY                         *
+  122                 *                                                       *
+  123                 * Esta subrutina provoca un delay de aprox 500 ms para  *
+  124                 * el procesador M68HC11E                                *
+  125                 * No recibe ningún parámetro ni retorna valores, no     *
+  126                 * hace falta liberar el stack depués de invocarla       *
+  127                 *********************************************************
+  128  2150                   org     $2150
+  129  2150           delay   equ     *
+  130  2150 3C                pshx                    Hago backup de los registros    (4 ciclos)
+  131  2151 183C              pshy                                                    (5 ciclos)
+  132  2153 36                psha                                                    (3 ciclos)
+  133  2154 37                pshb                                                    (3 ciclos)
+  134  2155 8602              ldaa    #2              Cargo la cantidad de repeticiones que haré con el loop1. (2 ciclos)
+  135                 *                                                               [TOTAL:17]
+  136                 
+  137                 *       [LOOP1]: n recorridos del loop1 lleva n*(9+T) ciclos, siendo T los ciclos en total del loop2. 
+  138  2157 18CED900  loop1   ldy     #$D900          Cargo la cantidad de repeticiones que haré con el loop2. (4 ciclos)
+  139                 
+  140                 *       [LOOP2]: Un solo recorrido del loop2 lleva 9 ciclos, 55552 ($D900) recorridos del loop2 lleva 499968 ciclos
+  141  215B 01        loop2   nop                     retardo                 (2 ciclos)
+  142  215C 1809              dey                     decremento Y            (4 ciclos)
+  143  215E 26FB              bne     loop2           salto si no es cero     (3 ciclos)
+  144                 *                                                       [TOTAL:9]
+  145                 
+  146  2160 4A                deca                    decremento A    (2 ciclos)
+  147  2161 26F4              bne     loop1           si A!=0, repito (3 ciclos)
+  148                 
+  149                 
+  150  2163 18CE0012          ldy     #$12            Retardo                         (5 ciclos)
+  151  2167 33                pulb                    Recupero el valor               (4 ciclos)
+  152  2168 32                pula                    de los  registros               (4 ciclos)
+  153  2169 1838              puly                                                    (6 ciclos)
+  154  216B 38                pulx                                                    (5 ciclos)
+  155  216C 39                rts                     Retorno de la rubrutina         (5 ciclos)
+  156                 *                                                               [TOTAL:29]
+  157                 
+  158                 
+  159                 *********************************************************
+  160                 *               SUBRUTINA DELAY_5                       *
+  161                 *                                                       *
+  162                 * Esta subrutina ejecuta 10 veces la subrutina delay    *
+  163                 * ya que la anterior no tiene un delay exacto de 500ms  *
+  164                 * Con esta subrutina se logra un delay de aproximado de *
+  165                 * 0,5 segundos para el Wookie                           *
+  166                 * No tiene ningún parámetro de entrada ni retorna valores
+  167                 *********************************************************
+  168  2180                   org     $2180
+  169  2180           delay_5 equ     *
+  170  2180 36                psha                    solo hago backup de A porque es el único registro que modifico
+  171  2181 860A              ldaa    #10             cargo la cantidad de repeticiones
+  172                 
+  173  2183 BD2150    repite2 jsr     delay           Llamo a la subrutina delay
+  174  2186 4A                deca                    decremento las repeticiones restantes
+  175  2187 26FA              bne     repite2         si la cantidad de repeticiones restantes no es cero, repite
+  176                 
+  177  2189 32                pula                    recupero el backup de A
+  178  218A 39                rts
+  179                 
+  180                 *********************************************************
+  181                 *               ZONA DEL STACK                          *
+  182                 *********************************************************
+  183                 
+  184  2500                   org     $2500
+  185  2500           stack   rmb     32
+  186  251F           stk_ini equ     *-1
+  187                 
+  188                 
+  189  2520                   end
+
+    Errors:  None         ###########
+    Bytes:   85           # tp2_p11 #
+    CRC:     0C49         ###########
+

@@ -1,0 +1,115 @@
+################################################################################
+#                                                                              #
+#    Micro Series 6801 Assembler V2.00/DOS              12/Apr/21  19:03:45    #
+#                                                                              #
+#       Source   =   tp2_p09.msa                                               #
+#       List     =   tp2_p09.lst                                               #
+#       Object   =   tp2_p09.r07                                               #
+#       Options  =                                                             #
+#                                                                              #
+#                                               (c) Copyright IAR Systems 1990 #
+################################################################################
+
+
+    1                 *****************************************************************************************************************
+    2                 *               TP2     EJERCICIO 9                     GRUPO 1                                                 *
+    3                 *                                                                                                               *
+    4                 * Consigna:                                                                                                     *
+    5                 *       Repetir el ejercicio 8, esta vez strcpy recibe por stack las direcciones origen y destino.              *
+    6                 *       Se respetan las mismas condiciones para la reserva de memoria y definición de las cadenas.              *
+    7                 *       Se modifica el registro de error. Si el programa no puede copiar exitosamente la cadena deberá          *
+    8                 *       colocar el bit de carry en uno, caso contrario deberá quedar en cero.                                   *
+    9                 *       Se deberán emplear menos de 20 instrucciones.                                                           *
+   10                 *****************************************************************************************************************
+   11                 
+   12                 
+   13  0000                   p68h11
+   14                 
+   15  0014           STR_LEN equ     20              Largo máximo de la cadena de caracteres a copiar.
+   16  2040           STR_IN  equ     $2040           Posición de la cadena a copiar
+   17  2060           STROUT  equ     $2060           Posición en la que se pegará la cadena copiada
+   18                 
+   19                 *********************************************************
+   20                 *               PROGRAMA PRINCIPAL (MAIN)               *
+   21                 *                                                       *
+   22                 *       Copia una cadena de texto de 20 caracteres      *
+   23                 *       como máximo (incluyendo el terminador)          *
+   24                 *********************************************************
+   25                 
+   26  2000                   org     $2000
+   27  2000           main    equ     *
+   28  2000 8E211F            lds     #stk_ini        cargo la posición del stack
+   29  2003 CE2040            ldx     #STR_IN         cargo la posición inicial en memoria de la cadena a copiar
+   30  2006 18CE2060          ldy     #STROUT         cargo la posición inicial de destino en memoria donde se pegará la cadena
+   31  200A 3C                pshx                    Introduzco los parámetros de entrada en el stack, primero la dirección
+   32  200B 183C              pshy                    de origen, y luego la dirección de destino
+   33  200D BD20A0            jsr     strcpy          Llamo a la subrutina strcpy
+   34  2010 1838              puly                    Libero los 4 bytes del stack
+   35  2012 1838              puly                    usados por los parámetros de entrada
+   36                 
+   37  2014 7E2014    fin     jmp     fin
+   38                 
+   39                 *****************************************************************************************
+   40                 *               SUBRUTINA STRCPY                                                        *
+   41                 * Descripción: Esta subrutina copia una cadena de texto de una posición a otra.         *
+   42                 *                                                                                       *
+   43                 * Inputs: Recibe por stack (1) la posición inicial de la cadena a copiar (16 bits) y    *
+   44                 *       (2)  la posición en donde se pegará dicha cadena (16 bits)                      *
+   45                 *                                                                                       *
+   46                 * Si la copia fue exitosa, coloca el carry en cero, en caso contrario queda en 1        *
+   47                 * Luego de ejecutar esta subrutina, se deben liberar 4 bytes del stack                  *
+   48                 *****************************************************************************************
+   49  20A0                   ORG     $20A0
+   50  20A0           strcpy  equ     *
+   51  20A0 3C                pshx                    Hago backup del registro IX
+   52  20A1 30                tsx                     Coloco en X la nueva dirección de memoria (X=SP+1)
+   53                 
+   54  20A2 1AEE04            ldy     4,X             Cargo en Y la dirección donde debo pegar el string (strOut ptr)
+   55  20A5 EC06              ldd     6,X             Guardo en D la dirección donde se encuentra el string a copiar (strIn ptr)
+   56  20A7 8F                xgdx                    Intercambio D con X (X<->D)
+   57                 
+   58  20A8 C614              ldab    #STR_LEN        *cargo en B la cantidad de ciclos del loop
+   59                 
+   60  20AA A600      loop    ldaa    0,X             Cargo un caracter en A
+   61  20AC 270C              beq     endstr          si detecto el terminador del string ($00), salto a endstr
+   62  20AE 18A700            staa    0,Y             Pego el caracter
+   63  20B1 08                inx                     Aumento X
+   64  20B2 1808              iny                     Aumento Y
+   65  20B4 5A                decb                    Decremento B
+   66  20B5 26F3              bne     loop            Si no es cero, repite
+   67  20B7 0D                sec                     Error: no se encontró el el fin de la cadena (Carry=1)
+   68  20B8 2002              bra     return          
+   69  20BA 0C        endstr  clc                     OK: La cadena se copio exitosamente (Carry=0)   
+   70                 
+   71  20BB 38                pulx
+   72  20BC 39        return  rts                     Retorno de la subrutina
+   73                 
+   74                 
+   75                 *********************************************************
+   76                 *               AREA DE MEMORIA                         *
+   77                 *********************************************************
+   78                 
+   79  2040                   org     STR_IN          posición de la cadena a copiar
+   80  2040 43484152  STRING  fcc     'CHARACTER STRING'
+       2044 41435445
+       2048 52205354
+       204C 52494E47
+   81                 
+   82  2060                   org     STROUT          Posición en la que pegaré la cadena
+   83  2060                   rmb     STR_LEN         Reservo memoria para la cadena de caraceres (destino)
+   84                 
+   85                 *********************************************************
+   86                 *               AREA DEL STACK                          *
+   87                 * Se necesitan 10 posiciones, se deja un margen extra   *
+   88                 *********************************************************
+   89                 
+   90  2100                   ORG     $2100
+   91  2100           stack   RMB     32
+   92  211F           stk_ini EQU     *-1
+   93                 
+   94  2120                   end
+
+    Errors:  None         ###########
+    Bytes:   68           # tp2_p09 #
+    CRC:     E9B5         ###########
+

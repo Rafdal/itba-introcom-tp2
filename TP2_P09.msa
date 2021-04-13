@@ -1,0 +1,94 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 9			GRUPO 1							*
+*														*
+* Consigna:													*
+*	Repetir el ejercicio 8, esta vez strcpy recibe por stack las direcciones origen y destino. 		*
+*	Se respetan las mismas condiciones para la reserva de memoria y definición de las cadenas. 		*
+*	Se modifica el registro de error. Si el programa no puede copiar exitosamente la cadena deberá 		*
+*	colocar el bit de carry en uno, caso contrario deberá quedar en cero. 					*
+*	Se deberán emplear menos de 20 instrucciones.								*
+*****************************************************************************************************************
+
+
+	p68h11
+
+STR_LEN	equ	20		Largo máximo de la cadena de caracteres a copiar.
+STR_IN	equ	$2040		Posición de la cadena a copiar
+STROUT	equ	$2060		Posición en la que se pegará la cadena copiada
+
+*********************************************************
+*		PROGRAMA PRINCIPAL (MAIN)		*
+*							*
+*	Copia una cadena de texto de 20 caracteres	*
+*	como máximo (incluyendo el terminador)		*
+*********************************************************
+
+	org	$2000
+main	equ	*
+	lds	#stk_ini 	cargo la posición del stack
+	ldx	#STR_IN		cargo la posición inicial en memoria de la cadena a copiar
+	ldy	#STROUT		cargo la posición inicial de destino en memoria donde se pegará la cadena
+	pshx			Introduzco los parámetros de entrada en el stack, primero la dirección
+	pshy			de origen, y luego la dirección de destino
+	jsr	strcpy		Llamo a la subrutina strcpy
+	puly			Libero los 4 bytes del stack
+	puly			usados por los parámetros de entrada
+
+fin	jmp	fin
+
+*****************************************************************************************
+*		SUBRUTINA STRCPY							*
+* Descripción: Esta subrutina copia una cadena de texto	de una posición a otra. 	*
+* 											*
+* Inputs: Recibe por stack (1) la posición inicial de la cadena a copiar (16 bits) y 	*
+*	(2)  la posición en donde se pegará dicha cadena (16 bits)			*
+*											*
+* Si la copia fue exitosa, coloca el carry en cero, en caso contrario queda en 1	*
+* Luego de ejecutar esta subrutina, se deben liberar 4 bytes del stack			*
+*****************************************************************************************
+	ORG	$20A0
+strcpy	equ	*
+	pshx			Hago backup del registro IX
+	tsx			Coloco en X la nueva dirección de memoria (X=SP+1)
+
+	ldy	4,X		Cargo en Y la dirección donde debo pegar el string (strOut ptr)
+	ldd	6,X		Guardo en D la dirección donde se encuentra el string a copiar (strIn ptr)
+	xgdx			Intercambio D con X (X<->D)
+
+ 	ldab	#STR_LEN	*cargo en B la cantidad de ciclos del loop
+
+loop	ldaa	0,X		Cargo un caracter en A
+	beq	endstr		si detecto el terminador del string ($00), salto a endstr
+	staa	0,Y		Pego el caracter
+	inx			Aumento X
+	iny			Aumento Y
+	decb			Decremento B
+	bne	loop		Si no es cero, repite
+	sec			Error: no se encontró el el fin de la cadena (Carry=1)
+	bra	return		
+endstr	clc			OK: La cadena se copio exitosamente (Carry=0)	
+
+	pulx
+return	rts			Retorno de la subrutina
+
+
+*********************************************************
+*		AREA DE MEMORIA				*
+*********************************************************
+
+	org	STR_IN		posición de la cadena a copiar
+STRING 	fcc 	'CHARACTER STRING'
+
+	org	STROUT		Posición en la que pegaré la cadena
+	rmb	STR_LEN		Reservo memoria para la cadena de caraceres (destino)
+
+*********************************************************
+*		AREA DEL STACK				*
+* Se necesitan 10 posiciones, se deja un margen extra	*
+*********************************************************
+
+	ORG	$2100
+stack	RMB	32
+stk_ini	EQU	*-1
+
+	end

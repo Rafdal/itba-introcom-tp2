@@ -1,0 +1,97 @@
+################################################################################
+#                                                                              #
+#    Micro Series 6801 Assembler V2.00/DOS              12/Apr/21  18:25:17    #
+#                                                                              #
+#       Source   =   tp2_p10.msa                                               #
+#       List     =   tp2_p10.lst                                               #
+#       Object   =   tp2_p10.r07                                               #
+#       Options  =                                                             #
+#                                                                              #
+#                                               (c) Copyright IAR Systems 1990 #
+################################################################################
+
+
+    1                 *****************************************************************************************************************
+    2                 *               TP2     EJERCICIO 10                    GRUPO 1                                                 *
+    3                 *                                                                                                               *
+    4                 * Consigna:                                                                                                     *
+    5                 *       Escribir una subrutina que produzca un delay de 0,5 segundos al invocarla.                              *
+    6                 *       El propósito de la subrutina es sólo retrasar la ejecución de un programa.                              *
+    7                 *       Indicar claramente cuáles son los cálculos empleados para llegar al delay solicitado y cuál es el error *
+    8                 *       cometido por falta de precisión.                                                                        *
+    9                 *                                                                                                               *
+   10                 *****************************************************************************************************************
+   11                 * [microsecs]   =    [ciclos]                   *
+   12                 * 0.5 us        =       1                       *
+   13                 * 1 us          =       2                       *
+   14                 * 500 000 us    =       1 000 000  (objetivo)   *
+   15                 *************************************************
+   16  0000                   p68h11
+   17                 
+   18  2000                   org     $2000
+   19  2000           main    equ     *
+   20  2000 8E251F            lds     #stk_ini        cargo la posición del stack
+   21                 
+   22  2003 860A              ldaa    #10             Veces que repito la ejecución de la subrutina
+   23  2005 BD2100    repite  jsr     delay           Llamo a la subrutina delay
+   24  2008 4A                deca                    Decremento la cantidad de repeticiones restantes
+   25  2009 26FA              bne     repite          Si no es cero, repito
+   26                 
+   27  200B 7E200B    fin     jmp     fin
+   28                 
+   29                 
+   30                 *********************************************************
+   31                 *               SUBRUTINA delay                         *
+   32                 *                                                       *
+   33                 * Esta subrutina genera un delay de aprox 500 ms para   *
+   34                 * el procesador M68HC11E. (499.997ms sin contar el JSR) *
+   35                 * No recibe ningún parámetro ni retorna valores, no     *
+   36                 * hace falta liberar el stack depués de invocarla pero  *
+   37                 * la subrutina utiliza el stack internamente            *
+   38                 *********************************************************
+   39                 
+   40  2100                   org     $2100
+   41  2100           delay   equ     *
+   42  2100 3C                pshx                    Hago backup de los registros    (4 ciclos)
+   43  2101 183C              pshy                                                    (5 ciclos)
+   44  2103 36                psha                                                    (3 ciclos)
+   45  2104 37                pshb                                                    (3 ciclos)
+   46  2105 8602              ldaa    #2              Cargo la cantidad de repeticiones que haré con el loop1. (2 ciclos)
+   47                 *                                                               [TOTAL:17]
+   48                 
+   49                 *                               [LOOP1]: n recorridos del loop1 lleva n*(9+T) ciclos, 
+   50                 *                               siendo T los ciclos en total del loop2. 
+   51  2107 18CED900  loop1   ldy     #$D900          Cargo la cantidad de repeticiones que haré con el loop2. (4 ciclos)
+   52                 
+   53                 *                               [LOOP2]: Un solo recorrido del loop2 lleva 9 ciclos, 55552 ($D900) 
+   54                 *                               recorridos del loop2 lleva 499968 ciclos
+   55  210B 01        loop2   nop                     retardo                 (2 ciclos)
+   56  210C 1809              dey                     decremento Y            (4 ciclos)
+   57  210E 26FB              bne     loop2           salto si no es cero     (3 ciclos)
+   58                 *                                                       [TOTAL:9]
+   59                 
+   60  2110 4A                deca                    decremento A    (2 ciclos)
+   61  2111 26F4              bne     loop1           si A!=0, repito (3 ciclos)
+   62                 
+   63  2113 33                pulb                    Recupero el valor               (4 ciclos)
+   64  2114 32                pula                    de los  registros               (4 ciclos)
+   65  2115 1838              puly                                                    (6 ciclos)
+   66  2117 38                pulx                                                    (5 ciclos)
+   67  2118 39                rts                     Retorno de la rubrutina         (5 ciclos)
+   68                 *                                                               [TOTAL:24]
+   69                 
+   70                 *********************************************************
+   71                 *               AREA DEL STACK
+   72                 * Se necesitan pocas posiciones, se deja un margen extra
+   73                 *********************************************************
+   74                 
+   75  2500                   ORG     $2500
+   76  2500           stack   RMB     32
+   77  251F           stk_ini EQU     *-1
+   78                         
+   79  2520                   end
+
+    Errors:  None         ###########
+    Bytes:   39           # tp2_p10 #
+    CRC:     DDC3         ###########
+

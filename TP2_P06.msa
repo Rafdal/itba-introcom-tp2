@@ -1,0 +1,40 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 6			GRUPO 1							*
+*														*
+* Consigna:													*
+*	Determinar la longitud de una cadena de caracteres. 							*
+* 	La misma comienza en la dirección $2070 y el final de la misma está determinada por 			*
+*	el carácter ASCII "CR" (equivalente a $0D). 								*
+* 	Guardar la longitud en la dirección $2000 (asumir que longitud máxima puede ser 255)			*
+*														*
+*	ATENCION: Debe cargar el .s19 en el Wookie indicando Start Adress = 2005				*
+*****************************************************************************************************************
+	p68H11
+
+CR	equ	$0D		Caracter "Carriage Return" que marca el final del string
+STRPOS	equ	$2070		Posición inicial de la cadena
+
+max	equ	255		Máxima cantidad veces que se ejecuta el contador (1 byte)
+
+
+	org	$2005		Escribo el programa a partir de la dirección $2005 (leer Atención)
+main	equ	*
+	ldx	#STRPOS		Cargo la posición inicial de la cadena en X
+	ldab	#max		Cargo las repeticiones del contador en B
+
+repite	ldaa	#CR		Cargo el caracter CR ($0D) en A, para luego hacer A(xor)caracter
+	eora	0,X		Hago Xor entre A ($0D) y el caracter en la posición de memoria X
+	beq	found		Si el XOR devuelve cero, significa que el caracter en cuestión era CR
+	inx			Voy a la siguiente posición de la cadena
+	decb			Decremento el contador de cantidad de repeticiones
+	bne	repite		Si no es cero, repite la búsqueda del caracter CR
+
+found	comb			Invierto el valor de B para obtener la cantidad de caracteres contados
+	stab	lenPos		Guardo el largo de la cadena en lenPos
+
+	org	$2000
+lenPos	rmb	1		Variable que cuenta el largo del string
+
+
+fin	jmp	fin
+	end

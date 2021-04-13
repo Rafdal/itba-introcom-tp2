@@ -1,0 +1,54 @@
+################################################################################
+#                                                                              #
+#    Micro Series 6801 Assembler V2.00/DOS              12/Apr/21  18:24:59    #
+#                                                                              #
+#       Source   =   tp2_p04.msa                                               #
+#       List     =   tp2_p04.lst                                               #
+#       Object   =   tp2_p04.r07                                               #
+#       Options  =                                                             #
+#                                                                              #
+#                                               (c) Copyright IAR Systems 1990 #
+################################################################################
+
+
+    1                 *****************************************************************************************************************
+    2                 *               TP2     EJERCICIO 4                     GRUPO 1                                                 *
+    3                 *                                                                                                               *
+    4                 * Consigna:                                                                                                     *
+    5                 *       Realice un programa que cuenta la cantidad de 0's que contiene la palabra ubicada en la posición        *
+    6                 *       de memoria $2018. El resultado de la cuenta se deberá colocar en la posición de memoria $2019.          *
+    7                 *****************************************************************************************************************
+    8  0000                   p68H11
+    9                 
+   10                 * Colocar en 8 para palabras de 8 bits, dejar en 16 para palabras de 16 bits
+   11  0010           CICLOS  equ     16              Veces que se ejecuta el recorrido de la palabra (bit a bit)
+   12                 
+   13                 
+   14  2000                   org     $2000
+   15  2000           main    equ     *
+   16  2000 8610              ldaa    #CICLOS         Cargo en A la cantidad de recorridos que realizará el programa
+   17  2002 B70050            staa    ciclo           Luego lo guardo en la variable ciclo
+   18  2005 FC2018            ldd     $2018           Leo la palabra de la posición $2018 y la guardo en el registro D
+   19                 
+   20  2008 7F2019            clr     ceros           Inicio el contador de ceros en cero
+   21                 
+   22  200B 05        bucle   lsld                    Roto el registro D hacia la iziquierda para colocar el MSB en el carry
+   23  200C 2503              bcs     sigue           Si el carry está seteado (C=1), entonces pasa salteo la cuenta de ceros
+   24  200E 7C2019            inc     ceros           Si el carry no está seteado (C=0), incrementa la variable ceros
+   25  2011 7A0050    sigue   dec     ciclo           Decremento los la cantidad de ciclos que quedan por recorrer
+   26  2014 26F5              bne     bucle           Si la cantidad de ciclos restantes no es cero, ejecuto el bucle nuevamente
+   27  2016 7E2016    fin     jmp     fin             Si la cantidad de ciclos restantes era cero, termina aquí
+   28                 
+   29                 
+   30  0050                   org     $0050
+   31  0050           ciclo   rmb     1               Esta variable guarda la cantidad de ciclos restantes por recorrer
+   32                 
+   33  2019                   org     $2019
+   34  2019           ceros   rmb     1               Este es el contador de ceros que guardará el resultado
+   35                 
+   36  201A                   end
+
+    Errors:  None         ###########
+    Bytes:   25           # tp2_p04 #
+    CRC:     C499         ###########
+

@@ -1,0 +1,107 @@
+################################################################################
+#                                                                              #
+#    Micro Series 6801 Assembler V2.00/DOS              12/Apr/21  18:25:11    #
+#                                                                              #
+#       Source   =   tp2_p08.msa                                               #
+#       List     =   tp2_p08.lst                                               #
+#       Object   =   tp2_p08.r07                                               #
+#       Options  =                                                             #
+#                                                                              #
+#                                               (c) Copyright IAR Systems 1990 #
+################################################################################
+
+
+    1                 *****************************************************************************************************************
+    2                 *               TP2     EJERCICIO 8                     GRUPO 1                                                 *
+    3                 *                                                                                                               *
+    4                 * Consigna:                                                                                                     *
+    5                 *       La subrutina recibe como parámetro un puntero (dirección de memoria) a la dirección de inicio del       *
+    6                 *       string en el registro IX y la dirección destino en el registro IY.                                      *
+    7                 *       Usar la directiva FCC y FCB para definir la cadena origen de prueba y RMB para reservar la zona de      *
+    8                 *       memoria destino (reservar por defecto 20 bytes).                                                        *
+    9                 *       El string origen tiene como terminador el cero. La copia termina una vez copiado el terminador $00.     *
+   10                 *       Si la función puede realizar la copia exitosamente deberá colocar un cero en el registro A,             *
+   11                 *       de no hacerlo deberá colocar el mismo con un uno. Se deberán emplear menos de 20 instrucciones.         *
+   12                 *****************************************************************************************************************
+   13  0000                   p68h11
+   14                 
+   15  0014           STR_LEN equ     20              Largo máximo de la cadena de caracteres a copiar.
+   16  2040           STR_IN  equ     $2040           Posición de la cadena a copiar
+   17  2060           STROUT  equ     $2060           Posición en la que se pegará la cadena copiada
+   18                 
+   19                 *********************************************************
+   20                 *               PROGRAMA PRINCIPAL (MAIN)               *
+   21                 *                                                       *
+   22                 *       Copia una cadena de texto de 20 caracteres      *
+   23                 *       como máximo (incluyendo el terminador)          *
+   24                 *********************************************************
+   25                 
+   26  2000                   org     $2000
+   27  2000           main    equ     *
+   28  2000 8E210F            lds     #stk_ini        cargo la posición del stack
+   29  2003 CE2040            ldx     #STR_IN         IX = dirección del string de entrada (input)
+   30  2006 18CE2060          ldy     #STROUT         IY = dirección de salida (donde se pega el string copiado)
+   31                 
+   32  200A BD20A0            jsr     strcpy          Llamo a la subrutina strcpy
+   33                 
+   34  200D 7E200D    fin     jmp     fin
+   35                 
+   36                 
+   37                 *****************************************************************************************
+   38                 *               SUBRUTINA STRCPY                                                        *
+   39                 * Descripción: Esta subrutina copia una cadena de texto de una posición a otra.         *
+   40                 *                                                                                       *
+   41                 * Inputs: Recibe por el registro IX la posición inicial de la cadena a copiar y         *
+   42                 *       por el registro IY la posición inicial en donde se pegará dicha cadena          *
+   43                 *                                                                                       *
+   44                 * Si la copia fue exitosa, el registro A queda en cero, en caso contrario queda en 1    *
+   45                 *****************************************************************************************
+   46                 
+   47  20A0                   ORG     $20A0
+   48  20A0           strcpy  equ     *
+   49  20A0 37                pshb                    Solo hago backup de B porque IX,IY y A son variables de input/output
+   50  20A1 C614              ldab    #STR_LEN        cargo en B la cantidad de ciclos del loop (caracteres a copiar)
+   51                 
+   52  20A3 A600      loop    ldaa    0,X             Cargo un caracter en A
+   53  20A5 270D              beq     endstr          Si detecto el terminador del string ($00), salto a endstr
+   54  20A7 18A700            staa    0,Y             En caso contrario, pego el caracter en las posiciones de destino
+   55  20AA 08                inx                     Aumento los punteros IX e IY para ir al siguiente caracter
+   56  20AB 1808              iny
+   57  20AD 5A                decb                    Decremento el contador B que marca la cantidad de caracteres a copiar
+   58  20AE 26F3              bne     loop            Si el contador no llegó a cero, repite
+   59  20B0 8601              ldaa    #1              Error: no se encontró el el fin de la cadena (A=1) y se superó el máximo de carcteres a copiar
+   60  20B2 2002              bra     return          
+   61  20B4 8600      endstr  ldaa    #0              OK: La cadena se copio exitosamente (A=0)
+   62                                         
+   63  20B6 33        return  pulb                    Recupero B
+   64  20B7 39                rts
+   65                 
+   66                 *********************************************************
+   67                 *               AREA DE MEMORIA                         *
+   68                 *********************************************************
+   69  2040                   org     STR_IN          posición de la cadena a copiar
+   70  2040 43484152  STRING  fcc     'CHARACTER STRING'
+       2044 41435445
+       2048 52205354
+       204C 52494E47
+   71                 
+   72  2060                   org     STROUT          Posición en la que pegaré la cadena
+   73  2060                   rmb     STR_LEN         Reservo memoria para la cadena de caraceres (destino)
+   74                 
+   75                 
+   76                 *********************************************************
+   77                 *               AREA DEL STACK                          *
+   78                 * Se necesitan 3 posiciones, se deja un margen extra    *
+   79                 *********************************************************
+   80                 
+   81  2100                   ORG     $2100
+   82  2100           stack   RMB     16
+   83  210F           stk_ini EQU     *-1
+   84                 
+   85                 
+   86  2110                   end
+
+    Errors:  None         ###########
+    Bytes:   56           # tp2_p08 #
+    CRC:     56CF         ###########
+

@@ -1,0 +1,79 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 10			GRUPO 1							*
+*														*
+* Consigna:													*
+*	Escribir una subrutina que produzca un delay de 0,5 segundos al invocarla. 				*
+*	El propósito de la subrutina es sólo retrasar la ejecución de un programa. 				*
+*	Indicar claramente cuáles son los cálculos empleados para llegar al delay solicitado y cuál es el error	*
+*	cometido por falta de precisión.									*
+*														*
+*****************************************************************************************************************
+* [microsecs]	=    [ciclos]			*
+* 0.5 us	=	1			*
+* 1 us		=	2			*
+* 500 000 us 	= 	1 000 000  (objetivo)	*
+*************************************************
+	p68h11
+
+	org	$2000
+main	equ	*
+	lds	#stk_ini 	cargo la posición del stack
+
+	ldaa	#10		Veces que repito la ejecución de la subrutina
+repite	jsr	delay		Llamo a la subrutina delay
+	deca			Decremento la cantidad de repeticiones restantes
+	bne	repite		Si no es cero, repito
+
+fin	jmp	fin
+
+
+*********************************************************
+*		SUBRUTINA delay				*
+*							*
+* Esta subrutina genera un delay de aprox 500 ms para	*
+* el procesador M68HC11E. (499.997ms sin contar el JSR) *
+* No recibe ningún parámetro ni retorna valores, no 	*
+* hace falta liberar el stack depués de invocarla pero	*
+* la subrutina utiliza el stack	internamente		*
+*********************************************************
+
+	org	$2100
+delay	equ	*
+	pshx			Hago backup de los registros	(4 ciclos)
+	pshy							(5 ciclos)
+	psha							(3 ciclos)
+	pshb							(3 ciclos)
+	ldaa	#2		Cargo la cantidad de repeticiones que haré con el loop1. (2 ciclos)
+*								[TOTAL:17]
+
+*				[LOOP1]: n recorridos del loop1 lleva n*(9+T) ciclos, 
+*				siendo T los ciclos en total del loop2. 
+loop1	ldy	#$D900		Cargo la cantidad de repeticiones que haré con el loop2. (4 ciclos)
+
+* 				[LOOP2]: Un solo recorrido del loop2 lleva 9 ciclos, 55552 ($D900) 
+*				recorridos del loop2 lleva 499968 ciclos
+loop2	nop			retardo 		(2 ciclos)
+	dey			decremento Y 		(4 ciclos)
+	bne	loop2		salto si no es cero 	(3 ciclos)
+*							[TOTAL:9]
+
+	deca			decremento A	(2 ciclos)
+	bne	loop1		si A!=0, repito (3 ciclos)
+
+	pulb			Recupero el valor 		(4 ciclos)
+	pula			de los	registros		(4 ciclos)
+	puly							(6 ciclos)
+	pulx							(5 ciclos)
+	rts			Retorno de la rubrutina		(5 ciclos)
+*								[TOTAL:24]
+
+*********************************************************
+*		AREA DEL STACK
+* Se necesitan pocas posiciones, se deja un margen extra
+*********************************************************
+
+	ORG	$2500
+stack	RMB	32
+stk_ini	EQU	*-1
+	
+	end

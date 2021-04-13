@@ -1,0 +1,36 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 4			GRUPO 1							*
+*														*
+* Consigna:													*
+* 	Realice un programa que cuenta la cantidad de 0's que contiene la palabra ubicada en la posición 	*
+*	de memoria $2018. El resultado de la cuenta se deberá colocar en la posición de memoria $2019.		*
+*****************************************************************************************************************
+	p68H11
+
+* Colocar en 8 para palabras de 8 bits, dejar en 16 para palabras de 16 bits
+CICLOS	equ	16		Veces que se ejecuta el recorrido de la palabra (bit a bit)
+
+
+	org	$2000
+main	equ	*
+	ldaa	#CICLOS		Cargo en A la cantidad de recorridos que realizará el programa
+	staa	ciclo		Luego lo guardo en la variable ciclo
+	ldd	$2018		Leo la palabra de la posición $2018 y la guardo en el registro D
+
+	clr	ceros		Inicio el contador de ceros en cero
+
+bucle	lsld			Roto el registro D hacia la iziquierda para colocar el MSB en el carry
+	bcs	sigue		Si el carry está seteado (C=1), entonces pasa salteo la cuenta de ceros
+	inc	ceros		Si el carry no está seteado (C=0), incrementa la variable ceros
+sigue	dec	ciclo		Decremento los la cantidad de ciclos que quedan por recorrer
+	bne	bucle		Si la cantidad de ciclos restantes no es cero, ejecuto el bucle nuevamente
+fin	jmp	fin		Si la cantidad de ciclos restantes era cero, termina aquí
+
+
+	org	$0050
+ciclo	rmb	1		Esta variable guarda la cantidad de ciclos restantes por recorrer
+
+	org	$2019
+ceros	rmb	1		Este es el contador de ceros que guardará el resultado
+
+	end

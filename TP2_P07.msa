@@ -1,0 +1,34 @@
+*****************************************************************************************************************
+*		TP2	EJERCICIO 7			GRUPO 1							*
+*														*
+* Consigna:													*
+*	Escribir un programa que sume el contenido de las posiciones de memorias comprendidas			*
+*	entre $5000 y $5010, y guarde el resultado a partir de la dirección $3000.				*
+*****************************************************************************************************************
+	p68H11
+
+begPos	EQU	$5000		Posición de memoria inicial
+endPos	EQU	$5010		Posición de memoria final
+
+outPos	EQU	$3000		Posición de memoria en la que guardo el resultado
+
+dif	EQU	endPos-begPos	Saco a diferencia entre la posición inicial y la final
+
+
+	ORG	$2000		
+main	EQU	*
+	ldx	#begPos		Cargo la posición de memoria inicial de la sumatoria, en X
+	ldy	#0		Inicio Y en cero
+
+	ldaa	#dif		Cargo la cantidad de veces que acumularé valores en Y
+repite	ldab	0,X		Cargo un valor de memoria (en la posición X) en B
+	aby			Sumo B a Y (Y=Y+B)
+	inx			Incremento X para ir a la siguiente posición de memoria
+	deca			Decremento la cantidad de repeticiones restantes
+	bne	repite		Si las repeticiones que restan no son cero, vuelve a repetir
+
+	sty	outPos		Una vez terminada la suma, guardo el resultado a partir de outPos
+
+
+fin	jmp	fin
+	END
